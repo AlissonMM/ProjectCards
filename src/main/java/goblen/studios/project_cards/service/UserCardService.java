@@ -100,7 +100,13 @@ public class UserCardService {
         int newScore = Math.min(currentScore + increment, 1000);
 
         userCard.setScore(newScore);
+
+        if (userCard.getFirstStudyDate() == null) {
+            userCard.setFirstStudyDate(LocalDateTime.now());
+        }
+
         userCard.setLastStudyDate(LocalDateTime.now());
+
 
         UserCard saved = userCardRepository.save(userCard);
         return UserCardMapper.fromEntityToReturn(saved);
@@ -115,7 +121,14 @@ public class UserCardService {
             int currentScore = userCard.getScore();
             int decreased = (int) (currentScore * 0.2); // mantém 20%, perde 80%
             userCard.setScore(decreased);
+
+        if (userCard.getFirstStudyDate() == null) {
+            userCard.setFirstStudyDate(LocalDateTime.now());
+        }
+
             userCard.setLastStudyDate(LocalDateTime.now());
+
+
 
         UserCard saved = userCardRepository.save(userCard);
         return UserCardMapper.fromEntityToReturn(saved);

@@ -1,20 +1,18 @@
 package goblen.studios.project_cards.service;
 
-import goblen.studios.project_cards.domain.entities.Deck;
-import goblen.studios.project_cards.domain.entities.DeckUser;
-import goblen.studios.project_cards.domain.entities.User;
+import goblen.studios.project_cards.domain.entities.*;
 import goblen.studios.project_cards.dto.Create.CreateDeckUserDto;
 import goblen.studios.project_cards.dto.Return.ReturnDeckUserDto;
 import goblen.studios.project_cards.mapper.DeckUserMapper;
-import goblen.studios.project_cards.repository.DeckRepository;
-import goblen.studios.project_cards.repository.DeckUserRepository;
-import goblen.studios.project_cards.repository.UserRepository;
+import goblen.studios.project_cards.repository.*;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,29 +21,64 @@ public class DeckUserService {
     private final DeckUserRepository deckUserRepository;
     private final UserRepository userRepository;
     private final DeckRepository deckRepository;
+    private final UserCardRepository userCardRepository;
+    private final CardRepository cardRepository;
 
     @Autowired
     public DeckUserService(DeckUserRepository deckUserRepository,
                            UserRepository userRepository,
-                           DeckRepository deckRepository) {
+                           DeckRepository deckRepository,
+                           UserCardRepository userCardRepository,
+                           CardRepository cardRepository) {
         this.deckUserRepository = deckUserRepository;
         this.userRepository = userRepository;
         this.deckRepository = deckRepository;
+        this.userCardRepository = userCardRepository;
+        this.cardRepository = cardRepository;
     }
 
     // Criar associação usuário-deck
     @Transactional
-    public ReturnDeckUserDto addUserToDeck(CreateDeckUserDto dto) {
-        User user = userRepository.findById(dto.getUserId())
-                .orElseThrow(() -> new NoSuchElementException("User with ID " + dto.getUserId() + " not found."));
+    public ReturnDeckUserDto copyDeckToUser(Long userId, Long deckId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Deck deck = deckRepository.findById(deckId)
+                .orElseThrow(() -> new RuntimeException("Deck not found"));
 
-        Deck deck = deckRepository.findById(dto.getDeckId())
-                .orElseThrow(() -> new NoSuchElementException("Deck with ID " + dto.getDeckId() + " not found."));
+        // Verifica se a relação já existe
+        Optional<DeckUser> existing = deckUserRepository.findAllByUser_IdUser(userId).stream()
+                .filter(du -> du.getDeck().getIdDeck().equals(deckId))
+                .findFirst();
 
-        DeckUser deckUser = DeckUserMapper.fromCreateToEntity(dto, user, deck);
-        DeckUser saved = deckUserRepository.save(deckUser);
+        if (existing.isPresent()) {
+            throw new RuntimeException("User already associated with this deck");
+        }
 
-        return DeckUserMapper.fromEntityToReturn(saved);
+        // Cria a relação DeckUser
+        DeckUser deckUser = DeckUser.builder()
+                .deck(deck)
+                .user(user)
+                .build();
+        deckUserRepository.save(deckUser);
+
+        // Criar UserCard para cada carta do deck
+        List<Card> deckCards = cardRepository.findAllByDeck_IdDeck(deckId);
+
+        for (Card card : deckCards) {
+            boolean exists = userCardRepository.findByUser_IdUserAndCard_IdCard(userId, card.getIdCard()) != null;
+            if (!exists) {
+                UserCard userCard = UserCard.builder()
+                        .user(user)
+                        .card(card)
+                        .score(0)
+                        .firstStudyDate(null)
+                        .lastStudyDate(null)
+                        .build();
+                userCardRepository.save(userCard);
+            }
+        }
+
+        return DeckUserMapper.fromEntityToReturn(deckUser);
     }
 
     // Buscar associações por usuário
