@@ -107,19 +107,13 @@ public class UserCardService {
     public ReturnUserCardDto markCardAsWrong(Long userId, Long cardId) {
         UserCard userCard = userCardRepository.findByUser_IdUserAndCard_IdCard(userId, cardId);
         if (userCard == null) {
-            userCard = UserCard.builder()
-                    .user(userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found")))
-                    .card(cardRepository.findById(cardId).orElseThrow(() -> new RuntimeException("Card not found")))
-                    .score(0)
-                    .firstStudyDate(LocalDateTime.now())
-                    .lastStudyDate(LocalDateTime.now())
-                    .build();
-        } else {
+            throw new RuntimeException("UserCard not found. You must study this card before marking it as correct.");
+        }
             int currentScore = userCard.getScore();
             int decreased = (int) (currentScore * 0.2); // mantém 20%, perde 80%
             userCard.setScore(decreased);
             userCard.setLastStudyDate(LocalDateTime.now());
-        }
+
         UserCard saved = userCardRepository.save(userCard);
         return UserCardMapper.fromEntityToReturn(saved);
     }
