@@ -4,8 +4,10 @@ import goblen.studios.project_cards.domain.entities.Card;
 import goblen.studios.project_cards.domain.entities.User;
 import goblen.studios.project_cards.domain.entities.UserCard;
 import goblen.studios.project_cards.dto.Create.CreateUserCardDto;
+import goblen.studios.project_cards.dto.Return.ReturnCardDto;
 import goblen.studios.project_cards.dto.Update.UpdateUserCardDto;
 import goblen.studios.project_cards.dto.Return.ReturnUserCardDto;
+import goblen.studios.project_cards.mapper.CardMapper;
 import goblen.studios.project_cards.mapper.UserCardMapper;
 import goblen.studios.project_cards.repository.CardRepository;
 import goblen.studios.project_cards.repository.UserCardRepository;
@@ -15,7 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 @Service
@@ -118,15 +121,68 @@ public class UserCardService {
         return UserCardMapper.fromEntityToReturn(saved);
     }
 
+    public List<ReturnCardDto> practiceCardsByDeck(Long userId, Long deckId, int limit) {
+        // Busca todas as cartas do usuário para o deck, ordenadas por score decrescente
+        List<UserCard> userCards = userCardRepository.findAllByUserIdAndDeckIdOrderByScoreDesc(userId, deckId);
+
+        // Filtra as cartas com score menor que 500
+        List<UserCard> lowScore = userCards.stream()
+                .filter(uc -> uc.getScore() < 500)
+                .toList();
+
+        // Embaralha ambas as listas para evitar viés na seleção
+        Collections.shuffle(lowScore);
+        Collections.shuffle(userCards);
+
+        // Calcula a quantidade para 60% de cartas com baixo score
+        int lowScoreCount = Math.min((int) (limit * 0.6), lowScore.size());
+
+        // Seleciona as cartas com baixo score até o limite calculado
+        List<UserCard> selected = new ArrayList<>(lowScore.subList(0, lowScoreCount));
+        Set<UserCard> selectedSet = new HashSet<>(selected); // Usado para evitar duplicatas
+
+        // Preenche o restante da lista com cartas aleatórias até atingir o limite
+        for (UserCard uc : userCards) {
+            if (selected.size() >= limit) break;
+            if (selectedSet.add(uc)) {
+                selected.add(uc);
+            }
+        }
+
+        // Embaralha o resultado final para variar a ordem
+        Collections.shuffle(selected);
+
+        // Mapeia as entidades para DTOs de retorno
+        return selected.stream()
+                .map(CardMapper::fromUserCardToReturn)
+                .collect(Collectors.toList());
+    }
+
+
     private int calculateIncreasingIncrement(int currentScore) {
-        if (currentScore < 100) return 5;
-        if (currentScore < 200) return 10;
-        if (currentScore < 300) return 20;
-        if (currentScore < 500) return 30;
-        if (currentScore < 700) return 40;
-        if (currentScore < 850) return 60;
-        if (currentScore < 950) return 75;
-        if (currentScore < 990) return 90;
+        if (currentScore < 100){
+            int defaultIncrement = ThreadLocalRandom.current().nextInt(10, 50);
+            return Math.min(defaultIncrement, 1000 - currentScore);
+        }
+
+        if (currentScore < 1000) {
+            int minIncrement = currentScore / 2;
+            int maxIncrement = currentScore;
+
+            // Define o limite superior como o que falta para chegar a 1000
+            int upperBound = Math.min(maxIncrement, 1000 - currentScore);
+
+            //Se o limite mínimo for maior ou igual ao limite superior, significa que
+            // já está quase no máximo
+            // entao retorna o que falta para completar 1000
+            if (minIncrement >= upperBound) {
+                return 1000 - currentScore; // já quase no limite
+            }
+            // Gera um incremento aleatório entre o mínimo e o máximo
+            int increment = ThreadLocalRandom.current().nextInt(minIncrement, upperBound);
+            return increment;
+        }
+
         return 1000 - currentScore; // só completa o que falta até 1000
     }
 
