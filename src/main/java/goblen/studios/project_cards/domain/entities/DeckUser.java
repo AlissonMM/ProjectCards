@@ -18,7 +18,7 @@ public class DeckUser {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_deck_user")
-    private int idDeckUsero;
+    private int idDeckUser;
 
     @ManyToOne
     @JoinColumn(name="id_user_fk", referencedColumnName = "id_user", nullable = false)
