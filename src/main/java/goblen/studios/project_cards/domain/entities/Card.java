@@ -28,6 +28,7 @@ public class Card {
 
     //     Várias cartas para um deck
     @ManyToOne
-    @JoinColumn(referencedColumnName ="id_deck", nullable = false)
+    @JoinColumn(name = "id_deck_fk_id_deck", referencedColumnName = "id_deck", nullable = false)
     private Deck deck;
+
 }

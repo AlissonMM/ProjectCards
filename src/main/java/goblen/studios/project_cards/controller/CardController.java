@@ -78,7 +78,7 @@ public class CardController {
 
     // ➕ Criar carta
     @PostMapping
-    public ResponseEntity<ReturnCardDto> createCard(@RequestBody @Valid CreateCardDto dto) {
+    public ResponseEntity<ReturnCardDto> createCard(@RequestBody CreateCardDto dto) {
         Card savedCard = cardService.createCard(dto);
         return ResponseEntity.ok(CardMapper.fromEntityToReturn(savedCard));
     }
