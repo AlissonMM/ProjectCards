@@ -1,5 +1,6 @@
 package goblen.studios.project_cards.controller;
 
+import goblen.studios.project_cards.dto.Create.CreateUserDto;
 import goblen.studios.project_cards.dto.Return.AuthResponseDto;
 import goblen.studios.project_cards.dto.Return.ReturnUserDto;
 import goblen.studios.project_cards.service.AuthService;
@@ -30,5 +31,11 @@ public class AuthController {
                     return ResponseEntity.ok(response);
                 })
                 .orElseGet(() -> ResponseEntity.status(401).body(null));
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<ReturnUserDto> register(@RequestBody CreateUserDto dto) {
+        ReturnUserDto user = authService.register(dto);
+        return ResponseEntity.ok(user);
     }
 }

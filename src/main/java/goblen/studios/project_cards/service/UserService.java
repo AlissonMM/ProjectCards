@@ -18,10 +18,12 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final PasswordService passwordService;
 
     @Autowired
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordService passwordService) {
         this.userRepository = userRepository;
+        this.passwordService = passwordService;
     }
 
     @Transactional
@@ -30,6 +32,7 @@ public class UserService {
             throw new IllegalArgumentException("Email already in use");
         }
         User user = UserMapper.fromCreateToEntity(dto);
+        user.setPassword(passwordService.hashPassword(dto.getPassword())); // hash da senha
         User saved = userRepository.save(user);
         return UserMapper.fromEntityToReturn(saved);
     }

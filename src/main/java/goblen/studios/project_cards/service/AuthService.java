@@ -1,6 +1,8 @@
 package goblen.studios.project_cards.service;
 
 import goblen.studios.project_cards.domain.entities.User;
+import goblen.studios.project_cards.dto.Create.CreateUserDto;
+import goblen.studios.project_cards.dto.Return.ReturnUserDto;
 import goblen.studios.project_cards.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,15 +16,19 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final ConcurrentHashMap<String, User> tokenStore = new ConcurrentHashMap<>();
+    private final PasswordService passwordService;
+    private final UserService userService;
 
     @Autowired
-    public AuthService(UserRepository userRepository) {
+    public AuthService(UserRepository userRepository, PasswordService passwordService, UserService userService) {
         this.userRepository = userRepository;
+        this.passwordService = passwordService;
+        this.userService = userService;
     }
 
     public Optional<String> authenticate(String email, String password) {
         return userRepository.findByEmail(email)
-                .filter(user -> user.getPassword().equals(password))
+                .filter(user -> passwordService.matches(password, user.getPassword()))
                 .map(user -> {
                     String token = UUID.randomUUID().toString();
                     tokenStore.put(token, user);
@@ -32,5 +38,9 @@ public class AuthService {
 
     public Optional<User> getUserByToken(String token) {
         return Optional.ofNullable(tokenStore.get(token));
+    }
+
+    public ReturnUserDto register(CreateUserDto dto) {
+        return userService.createUser(dto);
     }
 }
