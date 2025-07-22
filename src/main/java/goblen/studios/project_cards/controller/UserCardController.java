@@ -80,7 +80,7 @@ public class UserCardController {
     public ResponseEntity<List<ReturnCardDto>> practiceCardsByDeck(
             @RequestParam Long userId,
             @RequestParam Long deckId,
-            @RequestParam(defaultValue = "10") int limit) {
+            @RequestParam(defaultValue = "0") int limit) {
         return ResponseEntity.ok(userCardService.practiceCardsByDeck(userId, deckId, limit));
     }
 

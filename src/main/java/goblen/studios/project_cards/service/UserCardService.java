@@ -131,13 +131,13 @@ public class UserCardService {
             userCard.setLastStudyDate(LocalDateTime.now());
 
 
-
         UserCard saved = userCardRepository.save(userCard);
         return UserCardMapper.fromEntityToReturn(saved);
     }
 
     @Transactional
     public List<ReturnCardDto> practiceCardsByDeck(Long userId, Long deckId, int limit) {
+
         // 1. Garante associação DeckUser
         Optional<DeckUser> deckUserOpt = deckUserRepository.findAllByUser_IdUser(userId).stream()
                 .filter(du -> du.getDeck().getIdDeck().equals(deckId))
@@ -171,6 +171,11 @@ public class UserCardService {
                 userCardRepository.save(userCard);
             }
         }
+
+        if (limit <= 0) {
+            limit = deckCards.size();
+        }
+
 
         // 3. Busca todas as cartas do usuário para o deck, ordenadas por score decrescente
         List<UserCard> userCards = userCardRepository.findAllByUserIdAndDeckIdOrderByScoreDesc(userId, deckId);
