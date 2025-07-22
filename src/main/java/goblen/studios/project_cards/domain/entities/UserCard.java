@@ -29,9 +29,9 @@ public class UserCard {
     @Column(name = "score", nullable = false)
     private int score;
 
-    @Column(name = "first_study_date", nullable = false)
+    @Column(name = "first_study_date", nullable = true)
     private LocalDateTime firstStudyDate;
 
-    @Column(name = "last_study_date", nullable = false)
+    @Column(name = "last_study_date", nullable = true)
     private LocalDateTime lastStudyDate;
 }

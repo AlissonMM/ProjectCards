@@ -1,17 +1,13 @@
 package goblen.studios.project_cards.service;
 
-import goblen.studios.project_cards.domain.entities.Card;
-import goblen.studios.project_cards.domain.entities.User;
-import goblen.studios.project_cards.domain.entities.UserCard;
+import goblen.studios.project_cards.domain.entities.*;
 import goblen.studios.project_cards.dto.Create.CreateUserCardDto;
 import goblen.studios.project_cards.dto.Return.ReturnCardDto;
 import goblen.studios.project_cards.dto.Update.UpdateUserCardDto;
 import goblen.studios.project_cards.dto.Return.ReturnUserCardDto;
 import goblen.studios.project_cards.mapper.CardMapper;
 import goblen.studios.project_cards.mapper.UserCardMapper;
-import goblen.studios.project_cards.repository.CardRepository;
-import goblen.studios.project_cards.repository.UserCardRepository;
-import goblen.studios.project_cards.repository.UserRepository;
+import goblen.studios.project_cards.repository.*;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,14 +23,20 @@ public class UserCardService {
     private final UserCardRepository userCardRepository;
     private final UserRepository userRepository;
     private final CardRepository cardRepository;
+    private final DeckUserRepository deckUserRepository;
+    private final DeckRepository deckRepository;
 
     @Autowired
     public UserCardService(UserCardRepository userCardRepository,
                            UserRepository userRepository,
-                           CardRepository cardRepository) {
+                           CardRepository cardRepository,
+                           DeckUserRepository deckUserRepository,
+                           DeckRepository deckRepository) {
         this.userCardRepository = userCardRepository;
         this.userRepository = userRepository;
         this.cardRepository = cardRepository;
+        this.deckUserRepository = deckUserRepository;
+        this.deckRepository = deckRepository;
     }
 
     public List<ReturnUserCardDto> findBestUsersByCard(Long cardId, int limit) {
@@ -134,38 +136,74 @@ public class UserCardService {
         return UserCardMapper.fromEntityToReturn(saved);
     }
 
+    @Transactional
     public List<ReturnCardDto> practiceCardsByDeck(Long userId, Long deckId, int limit) {
-        // Busca todas as cartas do usuário para o deck, ordenadas por score decrescente
+        // 1. Garante associação DeckUser
+        Optional<DeckUser> deckUserOpt = deckUserRepository.findAllByUser_IdUser(userId).stream()
+                .filter(du -> du.getDeck().getIdDeck().equals(deckId))
+                .findFirst();
+        if (deckUserOpt.isEmpty()) {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            Deck deck = deckRepository.findById(deckId)
+                    .orElseThrow(() -> new RuntimeException("Deck not found"));
+            DeckUser deckUser = DeckUser.builder()
+                    .deck(deck)
+                    .user(user)
+                    .build();
+            deckUserRepository.save(deckUser);
+        }
+
+        // 2. Garante associação UserCard para todas as cartas do deck
+        List<Card> deckCards = cardRepository.findAllByDeck_IdDeck(deckId);
+        for (Card card : deckCards) {
+            UserCard existing = userCardRepository.findByUser_IdUserAndCard_IdCard(userId, card.getIdCard());
+            if (existing == null) {
+                User user = userRepository.findById(userId)
+                        .orElseThrow(() -> new RuntimeException("User not found"));
+                UserCard userCard = UserCard.builder()
+                        .user(user)
+                        .card(card)
+                        .score(0)
+                        .firstStudyDate(null)
+                        .lastStudyDate(null)
+                        .build();
+                userCardRepository.save(userCard);
+            }
+        }
+
+        // 3. Busca todas as cartas do usuário para o deck, ordenadas por score decrescente
         List<UserCard> userCards = userCardRepository.findAllByUserIdAndDeckIdOrderByScoreDesc(userId, deckId);
 
-        // Filtra as cartas com score menor que 500
-        List<UserCard> lowScore = userCards.stream()
+        // 4. Filtra as cartas com score menor que 500 (corrigido para lista mutável)
+        List<UserCard> lowScore = new ArrayList<>(userCards.stream()
                 .filter(uc -> uc.getScore() < 500)
-                .toList();
+                .toList());
 
-        // Embaralha ambas as listas para evitar viés na seleção
+        // 5. Embaralha ambas as listas para evitar viés na seleção
         Collections.shuffle(lowScore);
-        Collections.shuffle(userCards);
+        List<UserCard> userCardsShufflable = new ArrayList<>(userCards);
+        Collections.shuffle(userCardsShufflable);
 
-        // Calcula a quantidade para 60% de cartas com baixo score
+        // 6. Calcula a quantidade para 60% de cartas com baixo score
         int lowScoreCount = Math.min((int) (limit * 0.6), lowScore.size());
 
-        // Seleciona as cartas com baixo score até o limite calculado
+        // 7. Seleciona as cartas com baixo score até o limite calculado
         List<UserCard> selected = new ArrayList<>(lowScore.subList(0, lowScoreCount));
-        Set<UserCard> selectedSet = new HashSet<>(selected); // Usado para evitar duplicatas
+        Set<UserCard> selectedSet = new HashSet<>(selected);
 
-        // Preenche o restante da lista com cartas aleatórias até atingir o limite
-        for (UserCard uc : userCards) {
+        // 8. Preenche o restante da lista com cartas aleatórias até atingir o limite
+        for (UserCard uc : userCardsShufflable) {
             if (selected.size() >= limit) break;
             if (selectedSet.add(uc)) {
                 selected.add(uc);
             }
         }
 
-        // Embaralha o resultado final para variar a ordem
+        // 9. Embaralha o resultado final para variar a ordem
         Collections.shuffle(selected);
 
-        // Mapeia as entidades para DTOs de retorno
+        // 10. Mapeia as entidades para DTOs de retorno
         return selected.stream()
                 .map(CardMapper::fromUserCardToReturn)
                 .collect(Collectors.toList());
