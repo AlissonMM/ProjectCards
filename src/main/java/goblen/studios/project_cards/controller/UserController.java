@@ -54,4 +54,10 @@ public class UserController {
         List<ReturnUserDto> users = userService.getMostEngagedUsers();
         return ResponseEntity.ok(users);
     }
+
+    @GetMapping
+    public ResponseEntity<List<ReturnUserDto>> getAllUsers() {
+        List<ReturnUserDto> users = userService.getAllUsers();
+        return ResponseEntity.ok(users);
+    }
 }

@@ -15,9 +15,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
 
     // 🔍 Buscar por nome parcial (case-insensitive)
-    List<User> findByNameContainingIgnoreCase(String name);
+    Optional<User> findByEmailAndIsPublicTrue(String email);
 
     // 📈 Buscar os usuários com mais decks associados (via tabela deck_user)
-    @Query("SELECT du.user FROM DeckUser du GROUP BY du.user ORDER BY COUNT(du.deck) DESC")
-    List<User> findMostEngagedUsers();
+    @Query("SELECT du.user FROM DeckUser du WHERE du.user.isPublic = true GROUP BY du.user ORDER BY COUNT(du.deck) DESC")
+    List<User> findMostEngagedUsersByIsPublicTrue();
+
+    List<User> findByIsPublicTrue();
+    List<User> findByNameContainingIgnoreCaseAndIsPublicTrue(String name);
 }
