@@ -27,13 +27,13 @@ public class UserCardController {
 
     // ✅ Criar UserCard
     @PostMapping
-    public ResponseEntity<UserCard> createUserCard(@RequestBody CreateUserCardDto dto) {
+    public ResponseEntity<ReturnUserCardDto> createUserCard(@RequestBody CreateUserCardDto dto) {
         return ResponseEntity.ok(userCardService.createUserCard(dto));
     }
 
     // ✅ Atualizar UserCard
     @PutMapping
-    public ResponseEntity<UserCard> updateUserCard(@RequestBody UpdateUserCardDto dto) {
+    public ResponseEntity<ReturnUserCardDto> updateUserCard(@RequestBody UpdateUserCardDto dto) {
         return ResponseEntity.ok(userCardService.updateUserCard(dto));
     }
 

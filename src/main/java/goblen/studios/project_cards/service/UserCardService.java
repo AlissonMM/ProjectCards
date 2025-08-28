@@ -62,7 +62,7 @@ public class UserCardService {
     }
 
     @Transactional
-    public UserCard createUserCard(CreateUserCardDto dto) {
+    public ReturnUserCardDto createUserCard(CreateUserCardDto dto) {
         User user = userRepository.findById(dto.getUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
         Card card = cardRepository.findById(dto.getCardId())
@@ -74,11 +74,13 @@ public class UserCardService {
         }
 
         UserCard newUserCard = UserCardMapper.fromCreateToEntity(dto, user, card);
-        return userCardRepository.save(newUserCard);
+        UserCard savedCard = userCardRepository.save(newUserCard);
+
+        return UserCardMapper.fromEntityToReturn(savedCard);
     }
 
     @Transactional
-    public UserCard updateUserCard(UpdateUserCardDto dto) {
+    public ReturnUserCardDto updateUserCard(UpdateUserCardDto dto) {
         UserCard userCard = userCardRepository.findByUser_IdUserAndCard_IdCard(dto.getUserId(), dto.getCardId());
         if (userCard == null) {
             throw new RuntimeException("UserCard not found, use create instead");
@@ -86,7 +88,9 @@ public class UserCardService {
 
         // Atualiza só os campos permitidos
         UserCard userCardToSave = UserCardMapper.fromUpdateToEntity(dto, userCard);
-        return userCardRepository.save(userCardToSave);
+        UserCard updatedUserCard = userCardRepository.save(userCardToSave);
+
+        return UserCardMapper.fromEntityToReturn(updatedUserCard);
     }
 
     @Transactional

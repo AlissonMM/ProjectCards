@@ -70,8 +70,8 @@ public class DeckController {
     // 🔍 Buscar decks mais populares pelo deckUserService
     //porque o deckUserService tem a lógica de popularidade
     @GetMapping("/popular")
-    public ResponseEntity<List<Deck>> getMostPopularDecks() {
-        List<Deck> result = deckUserService.getMostPopularDecks();
+    public ResponseEntity<List<ReturnDeckDto>> getMostPopularDecks() {
+        List<ReturnDeckDto> result = deckUserService.getMostPopularDecks();
         return ResponseEntity.ok(result);
     }
 }

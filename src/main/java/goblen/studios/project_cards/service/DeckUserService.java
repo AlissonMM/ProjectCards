@@ -2,7 +2,9 @@ package goblen.studios.project_cards.service;
 
 import goblen.studios.project_cards.domain.entities.*;
 import goblen.studios.project_cards.dto.Create.CreateDeckUserDto;
+import goblen.studios.project_cards.dto.Return.ReturnDeckDto;
 import goblen.studios.project_cards.dto.Return.ReturnDeckUserDto;
+import goblen.studios.project_cards.mapper.DeckMapper;
 import goblen.studios.project_cards.mapper.DeckUserMapper;
 import goblen.studios.project_cards.repository.*;
 import jakarta.transaction.Transactional;
@@ -102,7 +104,10 @@ public class DeckUserService {
     }
 
     // Buscar decks mais populares (somente as entidades Deck)
-    public List<Deck> getMostPopularDecks() {
-        return deckUserRepository.findMostPopularDecks();
+    public List<ReturnDeckDto> getMostPopularDecks() {
+        List<Deck> decksList = deckUserRepository.findMostPopularDecks();
+
+        return decksList.stream()
+                .map(DeckMapper::fromEntityToReturn).toList();
     }
 }
