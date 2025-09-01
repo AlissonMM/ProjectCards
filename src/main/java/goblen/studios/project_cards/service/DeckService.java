@@ -7,6 +7,7 @@ import goblen.studios.project_cards.dto.Return.ReturnDeckDto;
 import goblen.studios.project_cards.mapper.DeckMapper;
 import goblen.studios.project_cards.repository.CardRepository;
 import goblen.studios.project_cards.repository.DeckRepository;
+import goblen.studios.project_cards.repository.DeckUserRepository;
 import goblen.studios.project_cards.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,14 +23,17 @@ public class DeckService {
     private final DeckRepository deckRepository;
     private final UserRepository userRepository;
     private final CardRepository cardRepository;
+    private final DeckUserRepository deckUserRepository;
 
     @Autowired
     public DeckService(DeckRepository deckRepository,
                        UserRepository userRepository,
-                       CardRepository cardRepository) {
+                       CardRepository cardRepository,
+                       DeckUserRepository deckUserRepository) {
         this.deckRepository = deckRepository;
         this.userRepository = userRepository;
         this.cardRepository = cardRepository;
+        this.deckUserRepository = deckUserRepository;
     }
 
     // ✅ Criar novo deck (valida se o usuário existe)
@@ -43,7 +47,9 @@ public class DeckService {
 
         Integer numberOfCards = cardRepository.countByDeck_IdDeck(savedDeck.getIdDeck());
 
-        return DeckMapper.fromEntityToReturn(savedDeck, numberOfCards);
+        Integer numberOfDownloads = deckUserRepository.countByDeck_IdDeck(savedDeck.getIdDeck());
+
+        return DeckMapper.fromEntityToReturn(savedDeck, numberOfCards, numberOfDownloads);
     }
 
     // ✅ Buscar deck por ID (lança exceção se não existir)
@@ -53,7 +59,7 @@ public class DeckService {
 
         Integer numberOfCards = cardRepository.countByDeck_IdDeck(deck.getIdDeck());
 
-        return DeckMapper.fromEntityToReturn(deck, numberOfCards);
+        return DeckMapper.fromEntityToReturn(deck, numberOfCards, numberOfCards);
     }
 
     // ✅ Buscar todos os decks de um usuário (valida se o usuário existe)
@@ -65,7 +71,8 @@ public class DeckService {
         return deckRepository.findAllByIdUserCreator_IdUser(userId).stream()
                 .map(deck -> {
                     Integer numberOfCards = cardRepository.countByDeck_IdDeck(deck.getIdDeck());
-                    return DeckMapper.fromEntityToReturn(deck, numberOfCards);
+                    Integer numberOfDownloads = deckUserRepository.countByDeck_IdDeck(deck.getIdDeck());
+                    return DeckMapper.fromEntityToReturn(deck, numberOfCards, numberOfDownloads);
                 } )
                 .collect(Collectors.toList());
     }
@@ -76,7 +83,8 @@ public class DeckService {
                 .filter(Deck::isPublic)
                 .map(deck -> {
                     Integer numberOfCards = cardRepository.countByDeck_IdDeck(deck.getIdDeck());
-                    return DeckMapper.fromEntityToReturn(deck, numberOfCards);
+                    Integer numberOfDownloads = deckUserRepository.countByDeck_IdDeck(deck.getIdDeck());
+                    return DeckMapper.fromEntityToReturn(deck, numberOfCards, numberOfDownloads);
                 })
                 .collect(Collectors.toList());
     }
@@ -87,7 +95,9 @@ public class DeckService {
                 .orElseThrow(() -> new NoSuchElementException("Deck with name '" + name + "' not found."));
 
         Integer numberOfCards = cardRepository.countByDeck_IdDeck(deck.getIdDeck());
-        return DeckMapper.fromEntityToReturn(deck, numberOfCards);
+
+        Integer numberOfDownloads = deckUserRepository.countByDeck_IdDeck(deck.getIdDeck());
+        return DeckMapper.fromEntityToReturn(deck, numberOfCards, numberOfDownloads);
     }
 
     // ✅ Buscar decks contendo parte do nome (like)
@@ -95,7 +105,8 @@ public class DeckService {
         return deckRepository.findByNameContaining(namePart).stream()
                 .map(deck -> {
                     Integer numberOfCards = cardRepository.countByDeck_IdDeck(deck.getIdDeck());
-                    return DeckMapper.fromEntityToReturn(deck, numberOfCards);
+                    Integer numberOfDownloads = deckUserRepository.countByDeck_IdDeck(deck.getIdDeck());
+                    return DeckMapper.fromEntityToReturn(deck, numberOfCards, numberOfDownloads);
                 })
                 .toList();
     }

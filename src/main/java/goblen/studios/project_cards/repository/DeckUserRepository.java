@@ -20,4 +20,6 @@ public interface DeckUserRepository extends JpaRepository<DeckUser, Integer> {
     // 📈 Buscar decks mais populares (ordenados pela quantidade de usuários)
     @Query("SELECT du.deck FROM DeckUser du GROUP BY du.deck ORDER BY COUNT(du.user) DESC")
     List<Deck> findMostPopularDecks();
+
+    Integer countByDeck_IdDeck(Long deckId);
 }

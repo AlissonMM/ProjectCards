@@ -110,7 +110,8 @@ public class DeckUserService {
         return decksList.stream()
                 .map(deck -> {
                     Integer numberOfCards = cardRepository.countByDeck_IdDeck(deck.getIdDeck());
-                    return DeckMapper.fromEntityToReturn(deck, numberOfCards);
+                    Integer numberOfDownloads = deckUserRepository.countByDeck_IdDeck(deck.getIdDeck());
+                    return DeckMapper.fromEntityToReturn(deck, numberOfCards, numberOfDownloads);
                 }).toList();
     }
 }

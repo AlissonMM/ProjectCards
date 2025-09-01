@@ -17,7 +17,7 @@ public class DeckMapper {
     }
 
     // 🔄 Converte Deck (entidade) para ReturnDeckDto (resposta para o cliente)
-    public static ReturnDeckDto fromEntityToReturn(Deck deck, Integer numberOfCards) {
+    public static ReturnDeckDto fromEntityToReturn(Deck deck, Integer numberOfCards, Integer numberOfDownloads) {
         return ReturnDeckDto.builder()
                 .idDeck(deck.getIdDeck())
                 .name(deck.getName())
@@ -25,6 +25,7 @@ public class DeckMapper {
                 .idUserCreator(deck.getIdUserCreator() != null ? deck.getIdUserCreator().getIdUser() : null)
                 .creatorUserName(deck.getIdUserCreator() != null ? deck.getIdUserCreator().getName() : null)
                 .numberOfCards(numberOfCards)
+                .numberOfDownloads(numberOfDownloads)
                 .build();
     }
 }

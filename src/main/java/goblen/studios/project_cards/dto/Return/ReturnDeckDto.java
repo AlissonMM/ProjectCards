@@ -20,4 +20,6 @@ public class ReturnDeckDto {
     private String creatorUserName;
 
     private Integer numberOfCards;
+
+    private Integer numberOfDownloads;
 }
