@@ -16,4 +16,6 @@ public interface CardRepository extends JpaRepository<Card, Long> {
     List<Card> findAllByAnswerContaining(String answer);
 
     List<Card> findAllByDeck_IdDeck(Long deckId);
+
+    Integer countByDeck_IdDeck(Long deckId);
 }

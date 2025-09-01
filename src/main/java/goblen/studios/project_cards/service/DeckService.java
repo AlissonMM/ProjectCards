@@ -5,6 +5,7 @@ import goblen.studios.project_cards.domain.entities.User;
 import goblen.studios.project_cards.dto.Create.CreateDeckDto;
 import goblen.studios.project_cards.dto.Return.ReturnDeckDto;
 import goblen.studios.project_cards.mapper.DeckMapper;
+import goblen.studios.project_cards.repository.CardRepository;
 import goblen.studios.project_cards.repository.DeckRepository;
 import goblen.studios.project_cards.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -20,11 +21,15 @@ public class DeckService {
 
     private final DeckRepository deckRepository;
     private final UserRepository userRepository;
+    private final CardRepository cardRepository;
 
     @Autowired
-    public DeckService(DeckRepository deckRepository, UserRepository userRepository) {
+    public DeckService(DeckRepository deckRepository,
+                       UserRepository userRepository,
+                       CardRepository cardRepository) {
         this.deckRepository = deckRepository;
         this.userRepository = userRepository;
+        this.cardRepository = cardRepository;
     }
 
     // ✅ Criar novo deck (valida se o usuário existe)
@@ -36,7 +41,9 @@ public class DeckService {
         Deck deck = DeckMapper.fromCreateToEntity(dto, creator);
         Deck savedDeck = deckRepository.save(deck);
 
-        return DeckMapper.fromEntityToReturn(savedDeck);
+        Integer numberOfCards = cardRepository.countByDeck_IdDeck(savedDeck.getIdDeck());
+
+        return DeckMapper.fromEntityToReturn(savedDeck, numberOfCards);
     }
 
     // ✅ Buscar deck por ID (lança exceção se não existir)
@@ -44,7 +51,9 @@ public class DeckService {
         Deck deck = deckRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Deck with ID " + id + " not found."));
 
-        return DeckMapper.fromEntityToReturn(deck);
+        Integer numberOfCards = cardRepository.countByDeck_IdDeck(deck.getIdDeck());
+
+        return DeckMapper.fromEntityToReturn(deck, numberOfCards);
     }
 
     // ✅ Buscar todos os decks de um usuário (valida se o usuário existe)
@@ -54,7 +63,10 @@ public class DeckService {
         }
 
         return deckRepository.findAllByIdUserCreator_IdUser(userId).stream()
-                .map(DeckMapper::fromEntityToReturn)
+                .map(deck -> {
+                    Integer numberOfCards = cardRepository.countByDeck_IdDeck(deck.getIdDeck());
+                    return DeckMapper.fromEntityToReturn(deck, numberOfCards);
+                } )
                 .collect(Collectors.toList());
     }
 
@@ -62,7 +74,10 @@ public class DeckService {
     public List<ReturnDeckDto> getAllPublicDecks() {
         return deckRepository.findAll().stream()
                 .filter(Deck::isPublic)
-                .map(DeckMapper::fromEntityToReturn)
+                .map(deck -> {
+                    Integer numberOfCards = cardRepository.countByDeck_IdDeck(deck.getIdDeck());
+                    return DeckMapper.fromEntityToReturn(deck, numberOfCards);
+                })
                 .collect(Collectors.toList());
     }
 
@@ -70,13 +85,18 @@ public class DeckService {
     public ReturnDeckDto getDeckByName(String name) {
         Deck deck = deckRepository.findByName(name)
                 .orElseThrow(() -> new NoSuchElementException("Deck with name '" + name + "' not found."));
-        return DeckMapper.fromEntityToReturn(deck);
+
+        Integer numberOfCards = cardRepository.countByDeck_IdDeck(deck.getIdDeck());
+        return DeckMapper.fromEntityToReturn(deck, numberOfCards);
     }
 
     // ✅ Buscar decks contendo parte do nome (like)
     public List<ReturnDeckDto> searchDecksByName(String namePart) {
         return deckRepository.findByNameContaining(namePart).stream()
-                .map(DeckMapper::fromEntityToReturn)
+                .map(deck -> {
+                    Integer numberOfCards = cardRepository.countByDeck_IdDeck(deck.getIdDeck());
+                    return DeckMapper.fromEntityToReturn(deck, numberOfCards);
+                })
                 .toList();
     }
 }

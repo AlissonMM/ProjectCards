@@ -108,6 +108,9 @@ public class DeckUserService {
         List<Deck> decksList = deckUserRepository.findMostPopularDecks();
 
         return decksList.stream()
-                .map(DeckMapper::fromEntityToReturn).toList();
+                .map(deck -> {
+                    Integer numberOfCards = cardRepository.countByDeck_IdDeck(deck.getIdDeck());
+                    return DeckMapper.fromEntityToReturn(deck, numberOfCards);
+                }).toList();
     }
 }

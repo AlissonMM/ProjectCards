@@ -17,13 +17,14 @@ public class DeckMapper {
     }
 
     // 🔄 Converte Deck (entidade) para ReturnDeckDto (resposta para o cliente)
-    public static ReturnDeckDto fromEntityToReturn(Deck deck) {
+    public static ReturnDeckDto fromEntityToReturn(Deck deck, Integer numberOfCards) {
         return ReturnDeckDto.builder()
                 .idDeck(deck.getIdDeck())
                 .name(deck.getName())
                 .isPublic(deck.isPublic())
                 .idUserCreator(deck.getIdUserCreator() != null ? deck.getIdUserCreator().getIdUser() : null)
                 .creatorUserName(deck.getIdUserCreator() != null ? deck.getIdUserCreator().getName() : null)
+                .numberOfCards(numberOfCards)
                 .build();
     }
 }
