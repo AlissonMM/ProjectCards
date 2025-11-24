@@ -114,4 +114,22 @@ public class DeckUserService {
                     return DeckMapper.fromEntityToReturn(deck, numberOfCards, numberOfDownloads);
                 }).toList();
     }
+
+    // Buscar decks copiados por um usuário (retorna ReturnDeckDto)
+    public List<ReturnDeckDto> getCopiedDecksByUserId(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new NoSuchElementException("User with ID " + userId + " not found.");
+        }
+
+        List<DeckUser> deckUsers = deckUserRepository.findAllByUser_IdUser(userId);
+
+        return deckUsers.stream()
+                .map(deckUser -> {
+                    Deck deck = deckUser.getDeck();
+                    Integer numberOfCards = cardRepository.countByDeck_IdDeck(deck.getIdDeck());
+                    Integer numberOfDownloads = deckUserRepository.countByDeck_IdDeck(deck.getIdDeck());
+                    return DeckMapper.fromEntityToReturn(deck, numberOfCards, numberOfDownloads);
+                })
+                .collect(Collectors.toList());
+    }
 }

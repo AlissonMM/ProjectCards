@@ -13,6 +13,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -62,19 +63,43 @@ public class DeckService {
         return DeckMapper.fromEntityToReturn(deck, numberOfCards, numberOfCards);
     }
 
-    // ✅ Buscar todos os decks de um usuário (valida se o usuário existe)
+    // ✅ Buscar todos os decks de um usuário (criados + copiados)
     public List<ReturnDeckDto> getDecksByUser(Long userId) {
         if (!userRepository.existsById(userId)) {
             throw new NoSuchElementException("User with ID " + userId + " not found.");
         }
 
-        return deckRepository.findAllByIdUserCreator_IdUser(userId).stream()
+        // Buscar decks criados pelo usuário
+        List<ReturnDeckDto> createdDecks = deckRepository.findAllByIdUserCreator_IdUser(userId).stream()
                 .map(deck -> {
                     Integer numberOfCards = cardRepository.countByDeck_IdDeck(deck.getIdDeck());
                     Integer numberOfDownloads = deckUserRepository.countByDeck_IdDeck(deck.getIdDeck());
                     return DeckMapper.fromEntityToReturn(deck, numberOfCards, numberOfDownloads);
-                } )
-                .collect(Collectors.toList());
+                })
+                .toList();
+
+        // Buscar decks copiados pelo usuário
+        List<ReturnDeckDto> copiedDecks = deckUserRepository.findAllByUser_IdUser(userId).stream()
+                .map(deckUser -> {
+                    Deck deck = deckUser.getDeck();
+                    Integer numberOfCards = cardRepository.countByDeck_IdDeck(deck.getIdDeck());
+                    Integer numberOfDownloads = deckUserRepository.countByDeck_IdDeck(deck.getIdDeck());
+                    return DeckMapper.fromEntityToReturn(deck, numberOfCards, numberOfDownloads);
+                })
+                .toList();
+
+        // Combinar as duas listas removendo duplicatas (baseado no idDeck)
+        List<ReturnDeckDto> allDecks = new ArrayList<>(createdDecks);
+        java.util.Set<Long> existingDeckIds = createdDecks.stream()
+                .map(ReturnDeckDto::getIdDeck)
+                .collect(java.util.stream.Collectors.toSet());
+
+        // Adicionar apenas decks copiados que não foram criados pelo usuário
+        copiedDecks.stream()
+                .filter(deck -> !existingDeckIds.contains(deck.getIdDeck()))
+                .forEach(allDecks::add);
+
+        return allDecks;
     }
 
     // ✅ Buscar todos os decks públicos (se nenhum encontrado, retorna lista vazia)

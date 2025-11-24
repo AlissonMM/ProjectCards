@@ -39,7 +39,7 @@ public class DeckController {
         return ResponseEntity.ok(deck);
     }
 
-    // 👤 Buscar decks por usuário
+    // 👤 Buscar todos os decks do usuário (criados + copiados)
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<ReturnDeckDto>> getDecksByUser(@PathVariable Long userId) {
         List<ReturnDeckDto> decks = deckService.getDecksByUser(userId);
